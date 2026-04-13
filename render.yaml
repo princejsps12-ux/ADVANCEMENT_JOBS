@@ -1,0 +1,36 @@
+# Render Blueprint: Dashboard → New → Blueprint → connect this repo.
+# 1) Deploy once. 2) Open advancer-ml → copy its URL (https://…onrender.com).
+# 3) advancer-api → Environment → set ML_SERVICE_URL to that URL (no trailing slash).
+# 4) Redeploy API if needed.
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: advancer-ml
+    runtime: python
+    rootDir: ml-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+
+  - type: web
+    name: advancer-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: MONGO_URI
+        sync: false
+      - key: ML_SERVICE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: CORS_ALLOW_VERCEL
+        value: "1"

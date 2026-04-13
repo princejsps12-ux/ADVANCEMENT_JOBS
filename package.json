@@ -1,0 +1,15 @@
+{
+  "name": "advancement-jobs",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n backend,frontend,ml -c blue,green,magenta \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\" \"npm run dev:ml\"",
+    "dev:ml": "node scripts/run-ml.mjs",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "setup": "node scripts/setup.mjs",
+    "ml:install": "python -m pip install -r ml-service/requirements.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
