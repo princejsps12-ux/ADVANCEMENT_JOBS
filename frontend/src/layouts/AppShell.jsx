@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { useCareer } from '../context/CareerContext.jsx';
 
 const nav = [
   { to: '/app/dashboard', label: 'Dashboard' },
@@ -11,6 +12,13 @@ const nav = [
 
 export default function AppShell() {
   const location = useLocation();
+  const { resetSession } = useCareer();
+
+  const handleLogout = (e) => {
+    e.preventDefault();
+    resetSession();
+    window.location.href = '/';
+  };
 
   return (
     <div className="min-h-screen bg-mesh font-sans text-slate-800">
@@ -48,6 +56,7 @@ export default function AppShell() {
           </nav>
           <Link
             to="/"
+            onClick={handleLogout}
             className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
           >
             Log out
@@ -71,17 +80,14 @@ export default function AppShell() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Outlet />
+        </motion.div>
       </main>
     </div>
   );

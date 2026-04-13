@@ -25,6 +25,24 @@ const defaultFilters = {
   page: 1
 };
 
+function mapCareerResultsToJobs(careerData) {
+  const ranked = (careerData?.results || []).filter((r) => r.job);
+  const rows = ranked
+    .filter((r) => Number(r.matchPercent || 0) > 0)
+    .map((r) => {
+      const { job, ...insight } = r;
+      return { ...job, _careerInsight: insight };
+    });
+
+  // Fallback: if every result scores 0, still show top few ranked jobs.
+  return rows.length > 0
+    ? rows
+    : ranked.slice(0, 5).map((r) => {
+        const { job, ...insight } = r;
+        return { ...job, _careerInsight: insight };
+      });
+}
+
 export function CareerProvider({ children }) {
   const navigate = useNavigate();
   const [filters, setFilters] = useState(defaultFilters);
@@ -32,14 +50,7 @@ export function CareerProvider({ children }) {
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [usingRecommendations, setUsingRecommendations] = useState(false);
-  const [careerData, setCareerData] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem('careerData');
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [careerData, setCareerData] = useState(null);
   const [loadError, setLoadError] = useState('');
 
   const buildFilterParams = useCallback(() => {
@@ -124,28 +135,8 @@ export function CareerProvider({ children }) {
   const handleCareerAnalysis = useCallback(
     (data) => {
       setCareerData(data);
-      try {
-        sessionStorage.setItem('careerData', JSON.stringify(data));
-      } catch {
-        // Ignore storage failures (private mode / quota / disabled storage).
-      }
       setUsingRecommendations(false);
-      const ranked = (data.results || []).filter((r) => r.job);
-      const rows = ranked
-        .filter((r) => Number(r.matchPercent || 0) > 0)
-        .map((r) => {
-          const { job, ...insight } = r;
-          return { ...job, _careerInsight: insight };
-        });
-      // Fallback: if everything scores 0, keep top few so the page never looks empty.
-      const fallbackRows =
-        rows.length > 0
-          ? rows
-          : ranked.slice(0, 5).map((r) => {
-              const { job, ...insight } = r;
-              return { ...job, _careerInsight: insight };
-            });
-      setJobs(fallbackRows);
+      setJobs(mapCareerResultsToJobs(data));
       setTotalPages(1);
       setFilters((prev) => ({ ...prev, page: 1 }));
       navigate('/app/analysis');
@@ -153,13 +144,26 @@ export function CareerProvider({ children }) {
     [navigate]
   );
 
+  useEffect(() => {
+    if (!careerData) return;
+    setUsingRecommendations(false);
+    setJobs(mapCareerResultsToJobs(careerData));
+    setTotalPages(1);
+    setFilters((prev) => ({ ...prev, page: 1 }));
+  }, [careerData]);
+
   const clearCareer = useCallback(() => {
     setCareerData(null);
-    try {
-      sessionStorage.removeItem('careerData');
-    } catch {
-      // Ignore storage failures.
-    }
+  }, []);
+
+  const resetSession = useCallback(() => {
+    setFilters(defaultFilters);
+    setJobs([]);
+    setTotalPages(1);
+    setIsLoading(false);
+    setUsingRecommendations(false);
+    setCareerData(null);
+    setLoadError('');
   }, []);
 
   const stats = useMemo(() => {
@@ -173,7 +177,7 @@ export function CareerProvider({ children }) {
           )
         : null;
     return {
-      jobsMatched: careerData ? matched : jobs.length,
+      jobsMatched: careerData ? matched : null,
       skillsDetected: skillsCount,
       matchAccuracy: avgMatch
     };
@@ -201,6 +205,7 @@ export function CareerProvider({ children }) {
       fetchRecommendations,
       handleCareerAnalysis,
       clearCareer,
+      resetSession,
       handlePageChange,
       buildFilterParams
     }),
@@ -218,6 +223,7 @@ export function CareerProvider({ children }) {
       fetchRecommendations,
       handleCareerAnalysis,
       clearCareer,
+      resetSession,
       handlePageChange,
       buildFilterParams
     ]

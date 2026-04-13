@@ -48,8 +48,8 @@ export default function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           label="Jobs matched"
-          value={stats.jobsMatched}
-          sub={careerData ? 'From last analysis' : 'In current list'}
+          value={stats.jobsMatched ?? '—'}
+          sub={careerData ? 'From last analysis' : 'Upload resume to analyze'}
         />
         <StatCard
           label="Skills detected"
